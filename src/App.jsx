@@ -1,215 +1,107 @@
-import React, {useState} from 'react';
-import { motion } from "motion/react";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router";
-import { Nav } from "./Components/Nav";
-import { Home } from "./Pages/Home";
-import { About } from "./Pages/About";
-import { Projects } from "./Pages/Projects";
-import { Contact } from "./Pages/Contact";
-import FloatingIcons from "./Components/FloatingIcons";
-import { NavigationProvider } from './Components/NavigationContext';
+import { useEffect, useRef } from 'react';
+import { Nav } from './Components/Nav';
+import { Home } from './Pages/Home';
+import { About } from './Pages/About';
+import { Projects } from './Pages/Projects';
+import { Contact } from './Pages/Contact';
+import ServerScene from './Components/ServerScene';
 
+// Matrix rain canvas
+function MatrixCanvas() {
+  const ref = useRef(null);
 
+  useEffect(() => {
+    const canvas = ref.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    const resize = () => {
+      canvas.width  = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    resize();
+    window.addEventListener('resize', resize);
+
+    const chars = '01';
+    const fontSize = 14;
+    let columns = Math.floor(canvas.width / fontSize);
+    let drops   = Array(columns).fill(1);
+
+    const draw = () => {
+      ctx.fillStyle = 'rgba(0,0,0,0.05)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#dc2626';
+      ctx.font = `${fontSize}px monospace`;
+      ctx.globalAlpha = 0.35;
+
+      for (let i = 0; i < drops.length; i++) {
+        ctx.fillText(chars[Math.floor(Math.random() * chars.length)], i * fontSize, drops[i] * fontSize);
+        if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) drops[i] = 0;
+        drops[i]++;
+      }
+      ctx.globalAlpha = 1;
+    };
+
+    const id = setInterval(draw, 50);
+    const onResize = () => {
+      resize();
+      columns = Math.floor(canvas.width / fontSize);
+      drops   = Array(columns).fill(1);
+    };
+    window.addEventListener('resize', onResize);
+
+    return () => {
+      clearInterval(id);
+      window.removeEventListener('resize', resize);
+      window.removeEventListener('resize', onResize);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={ref}
+      className="fixed inset-0 w-full h-full pointer-events-none"
+      style={{ zIndex: 0 }}
+    />
+  );
+}
 
 export default function Portfolio() {
-    const [activeSection, setActiveSection] = useState('home');
+  const scrollRef = useRef(null);
 
+  return (
+    <div ref={scrollRef} className="bg-black text-white">
+      {/* Layer 0: matrix rain */}
+      <MatrixCanvas />
 
-    return (
+      {/* Layer 1: 3D server (Three.js) */}
+      <ServerScene containerRef={scrollRef} />
 
-        <BrowserRouter>
-        <NavigationProvider>
-            <div className="bg-black text-white ">
-                <div className="fixed inset-0 z-0">
-                    <canvas id="matrix-canvas" className="matrix-canvas"></canvas>
-                    {/* Dark overlay with red gradient */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-red-950/20 to-black/80"></div>
-                    <div className="absolute inset-0 bg-black/40"></div>
-                </div>
-                <Nav activeSection={activeSection} setActiveSection={setActiveSection} />
-            </div>
-            <motion.div>
+      {/* Dark gradient overlay so text is readable over the 3D scene */}
+      <div
+        className="fixed inset-0 pointer-events-none"
+        style={{
+          zIndex: 2,
+          background: 'radial-gradient(ellipse at 70% 50%, transparent 30%, rgba(0,0,0,0.7) 100%)',
+        }}
+      />
 
-                <FloatingIcons activeSection={activeSection} />
-                <AnimatedRoutes />
-            </motion.div>
+      {/* Layer 3+: UI */}
+      <Nav />
 
+      <main style={{ position: 'relative', zIndex: 10 }}>
+        <Home />
+        <About />
+        <Projects />
+        <Contact />
+      </main>
 
-            {/* Footer */}
-            <footer className="bg-black border-t border-white/10 py-8 text-center text-gray-400 relative z-10">
-                <p>&copy; 2025 Vitor. All rights reserved.</p>
-            </footer>
-
-
-            <style jsx>{`
-        @keyframes fade-in {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        .animate-fade-in {
-          animation: fade-in 1s ease-out;
-        }
-
-        /* Matrix Canvas */
-        .matrix-container {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          overflow: hidden;
-        }
-        
-        .matrix-canvas {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-        }
-
-        /* Particle Canvas */
-        .particle-canvas {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-        }
-
-        /* Assembly Line Canvas */
-        .assembly-canvas {
-          position: absolute;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-        }
-
-        /* Waves Animation */
-        .waves-container {
-          position: absolute;
-          bottom: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          overflow: hidden;
-        }
-
-        .waves {
-          position: absolute;
-          width: 200%;
-          height: 100%;
-          bottom: 0;
-          left: 0;
-        }
-
-        .wave-group use:nth-child(1) {
-          animation: wave-move 15s cubic-bezier(0.55, 0.5, 0.45, 0.5) infinite;
-          animation-delay: -2s;
-        }
-
-        .wave-group use:nth-child(2) {
-          animation: wave-move 20s cubic-bezier(0.55, 0.5, 0.45, 0.5) infinite;
-          animation-delay: -3s;
-          opacity: 0.7;
-        }
-
-        .wave-group use:nth-child(3) {
-          animation: wave-move 25s cubic-bezier(0.55, 0.5, 0.45, 0.5) infinite;
-          animation-delay: -4s;
-          opacity: 0.5;
-        }
-
-        .wave-group use:nth-child(4) {
-          animation: wave-move 30s cubic-bezier(0.55, 0.5, 0.45, 0.5) infinite;
-          animation-delay: -5s;
-        }
-
-        @keyframes wave-move {
-          0% {
-            transform: translate3d(-90px, 0, 0);
-          }
-          100% {
-            transform: translate3d(85px, 0, 0);
-          }
-        }
-      `}</style>
-            </NavigationProvider>
-                  </BrowserRouter>
-           
-
-        
-
-    );
-}
-
-
-function AnimatedRoutes() {
-    const location = useLocation();
-    return (
-        <motion.div mode="wait">
-            <Routes location={location} key={location.pathname}>
-                <Route path="/" element={<PageTransition><Home /></PageTransition>} />
-                <Route path="/about" element={<PageTransition><About /></PageTransition>} />
-                <Route path = "/projects" element = {<PageTransition><Projects /></PageTransition>} />
-                <Route path = "/contact" element = {<PageTransition>< Contact /></PageTransition >} />
-            </Routes>
-        </motion.div>
-    );
-}
-
-function PageTransition({children}) {
-    return <motion.div className="page"
-        inittial={{opacity:0}}
-        animate={{opacity:1}}
-        exit={{opacity:0}}
-        transition={{duration:0.5, ease:"easeout"}}
-    >
-        {children }
-    </motion.div>
-}
- 
-// Initialize animations after component mounts
-if (typeof window !== 'undefined') {
-    setTimeout(() => {
-        // Matrix Rain Effect
-        const matrixCanvas = document.getElementById('matrix-canvas');
-        if (matrixCanvas) {
-            const ctx = matrixCanvas.getContext('2d');
-            matrixCanvas.width = window.innerWidth;
-            matrixCanvas.height = window.innerHeight;
-
-            const chars = '0111101010010100100000100101111110110010101001111110101010101111101010101';
-            const fontSize = 28;
-            const columns = matrixCanvas.width / fontSize;
-            const drops = Array(Math.floor(columns)).fill(1);
-
-            function drawMatrix() {
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
-                ctx.fillRect(0, 0, matrixCanvas.width, matrixCanvas.height);
-
-                ctx.fillStyle = '#ef4444';
-                ctx.font = fontSize + 'px monospace';
-
-                for (let i = 0; i < drops.length; i++) {
-                    const text = chars[Math.floor(Math.random() * chars.length)];
-                    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-
-                    if (drops[i] * fontSize > matrixCanvas.height && Math.random() > 0.975) {
-                        drops[i] = 0;
-                    }
-                    drops[i]++;
-                }
-            }
-
-            setInterval(drawMatrix, 50);
-        }
-    }, 100);
+      <footer
+        className="relative border-t border-white/10 py-8 text-center text-gray-600 text-xs font-mono"
+        style={{ zIndex: 10 }}
+      >
+        © 2025 Vitor Zezere · Built with React, Three.js & GSAP
+      </footer>
+    </div>
+  );
 }

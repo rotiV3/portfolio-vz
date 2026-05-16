@@ -1,98 +1,95 @@
-import React, { useEffect, useState } from 'react';
-import {Link } from "react-router";
-import { motion } from "motion/react";
-import { Menu, X, Github, Linkedin, Mail, ExternalLink } from 'lucide-react';
-import { useNavigation } from './NavigationContext';
+import { useState, useEffect } from 'react';
+import { motion } from 'motion/react';
+import { Menu, X } from 'lucide-react';
+
+const SECTIONS = ['home', 'about', 'projects', 'contact'];
+
 export function Nav() {
+  const [active, setActive] = useState('home');
+  const [scrolled, setScrolled] = useState(false);
+  const [open, setOpen] = useState(false);
 
-    const { activeSection, setActiveSection } = useNavigation();
-    const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => {
+      setScrolled(window.scrollY > 40);
 
-    const handleClick = () => {
-        setActiveSection(item);
-        setIsMenuOpen(isMenuOpen);
+      // Detect which section is in view
+      for (const id of [...SECTIONS].reverse()) {
+        const el = document.getElementById(id);
+        if (el && window.scrollY >= el.offsetTop - window.innerHeight / 2) {
+          setActive(id);
+          break;
+        }
+      }
     };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
+  const scrollTo = (id) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+    setOpen(false);
+  };
 
-    return (
-        <nav className={`fixed w-full z-50 transition-all duration-300 ${scrolled ? 'bg-black/95 backdrop-blur-sm shadow-lg' : 'bg-transparent'}`}>
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex justify-between items-center h-16">
-                    <div className="text-2xl font-bold">
-                        <motion.span className="text-red-600 center-hero"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ duration: 5 }}
-                        >Vitor</motion.span>
-                        <motion.span>Zezere</motion.span>
-                    </div>
+  return (
+    <nav className={`fixed w-full z-50 transition-all duration-300 ${scrolled ? 'bg-black/90 backdrop-blur-md shadow-lg shadow-black/40' : 'bg-transparent'}`}>
+      <div className="max-w-7xl mx-auto px-6 lg:px-8">
+        <div className="flex justify-between items-center h-16">
+          {/* Logo */}
+          <button onClick={() => scrollTo('home')} className="text-2xl font-bold tracking-tight">
+            <motion.span className="text-red-600" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1.5 }}>
+              Vitor
+            </motion.span>
+            <span className="text-white">Zezere</span>
+          </button>
 
-                    {/* Desktop Menu */}
-                    <div className="hidden md:flex space-x-8">
-                        {['home', 'about', 'projects', 'contact'].map((item) => (
-                            item == "home" ?
-                            <Link
-                                key={item}
-                                to={`/`}
-                                onClick={() => setActiveSection(item)}
-                                className={`uppercase font-extrabold transition-colors duration-300 hover:text-red-600 ${activeSection === item ? 'text-red-600' : 'text-white'
-                                    }`}
-                            >
-                                {item}
-                                </Link>
-                                : <Link
-                                    key={item}
-                                    to={`/${item}`}
-                                    onClick={() => setActiveSection(item)}
-                                    className={`uppercase font-extrabold transition-colors duration-300 hover:text-red-600 ${activeSection === item ? 'text-red-600' : 'text-white'
-                                        }`}
-                                >
-                                    {item}
-                                </Link>
-                        ))}
-                    </div>
+          {/* Desktop links */}
+          <div className="hidden md:flex items-center gap-8">
+            {SECTIONS.map((id) => (
+              <button
+                key={id}
+                onClick={() => scrollTo(id)}
+                className={`relative uppercase text-sm font-bold tracking-widest transition-colors duration-200
+                  ${active === id ? 'text-red-500' : 'text-white/70 hover:text-white'}`}
+              >
+                {id}
+                {active === id && (
+                  <motion.span
+                    layoutId="nav-underline"
+                    className="absolute -bottom-1 left-0 right-0 h-0.5 bg-red-500"
+                  />
+                )}
+              </button>
+            ))}
+          </div>
 
+          {/* Mobile toggle */}
+          <button className="md:hidden text-white p-2" onClick={() => setOpen(!open)}>
+            {open ? <X size={22} /> : <Menu size={22} />}
+          </button>
+        </div>
+      </div>
 
-                    {/* Mobile Menu Button */}
-                    <button
-                        className="md:hidden text-white"
-                        onClick={() => setIsMenuOpen(!isMenuOpen)}
-                    >
-                        {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-                    </button>
-                </div>
-            </div>
-
-            {/* Mobile Menu */}
-            {isMenuOpen && (
-                <div className="md:hidden bg-black/95 backdrop-blur-sm">
-                    <div className="px-2 pt-2 pb-3 space-y-1">
-                        {['home', 'about', 'projects', 'contact'].map((item) => (
-                            item == "home" ? <Link
-                                key={item}
-                                onClick={handleClick}
-                                to={`/`}
-                                className={`uppercase font-extrabold block w-full text-left px-3 py-2 rounded-md transition-colors duration-300 ${activeSection === item ? 'bg-red-600 text-white' : 'text-white hover:bg-red-600/20'
-                                    }`}
-                            >
-                                {item}
-                        </Link>
-                        :<Link
-                            key={item}
-                            onClick={handleClick}
-                            to={`/${item}`}
-                            className={`uppercase font-extrabold block w-full text-left px-3 py-2 rounded-md transition-colors duration-300 ${activeSection === item ? 'bg-red-600 text-white' : 'text-white hover:bg-red-600/20'
-                                }`}
-                        >
-                            {item}
-                        </Link>
-
-                        ))}
-                    </div>
-                </div>
-            )}
-        </nav>
+      {/* Mobile dropdown */}
+      {open && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="md:hidden bg-black/95 backdrop-blur-md border-t border-white/10"
+        >
+          {SECTIONS.map((id) => (
+            <button
+              key={id}
+              onClick={() => scrollTo(id)}
+              className={`block w-full text-left px-6 py-3 uppercase text-sm font-bold tracking-widest
+                ${active === id ? 'text-red-500 bg-red-500/10' : 'text-white/70 hover:text-white hover:bg-white/5'}`}
+            >
+              {id}
+            </button>
+          ))}
+        </motion.div>
+      )}
+    </nav>
   );
 }
 
